@@ -30,13 +30,14 @@ def establish_telnet_connection(ip_address, username, password):
         # Now that we're connected, modify the device hostname
         session.sendline('configure terminal')
         session.expect('#')
-        session.sendline(f'hostname NewHostName')  # Modify the hostname as required
+        session.sendline('hostname R1')  # Set the hostname to "R1"
         session.expect('#')
         session.sendline('end')
         session.expect('#')
 
         # Send a command to the remote device to output the running configuration
         session.sendline('show running-config')
+
         # Use a timeout and expect to capture the running config
         config_output = session.expect(['#', pexpect.TIMEOUT], timeout=10)
         
@@ -52,7 +53,7 @@ def establish_telnet_connection(ip_address, username, password):
         print('Success: Connected to', ip_address)
         print('Username:', username)
         print('Password: ********')
-        print('Modified hostname and saved running config locally.')
+        print('Modified hostname to "R1" and saved running config locally.')
         print('------------------------------------------------------')
         
         return session
@@ -72,6 +73,7 @@ def main():
     if session:
         # Terminate the Telnet session
         session.sendline('quit')
+        session.expect(pexpect.EOF)
         session.close()
 
 if __name__ == '__main__':
