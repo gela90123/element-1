@@ -36,6 +36,14 @@ def establish_telnet_connection(ip_address, username, password):
         print('Username:', username)
         print('Password: ********')
         print('------------------------------------------------------')
+
+        # Change the hostname (replace these commands with the actual commands)
+        session.sendline('configure terminal')
+        session.sendline('hostname R1')
+        session.sendline('end')
+        session.sendline('write memory')  # Save the configuration
+        session.expect('#')
+
         return session
 
     except Exception as e:
