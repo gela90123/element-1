@@ -35,9 +35,10 @@ def establish_telnet_connection(ip_address, username, password):
         session.sendline('end')
         session.expect('#')
 
-        # Send a command to the remote device to output the running configuration and save it to a file locally
+        # Send a command to the remote device to output the running configuration
         session.sendline('show running-config')
-        config_output = session.expect(['#', pexpect.TIMEOUT])
+        # Use a timeout and expect to capture the running config
+        config_output = session.expect(['#', pexpect.TIMEOUT], timeout=10)
         
         if config_output == 0:
             with open('running-config.txt', 'w') as config_file:
