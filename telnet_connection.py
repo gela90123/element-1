@@ -37,13 +37,19 @@ def establish_telnet_connection(ip_address, username, password):
 
         # Send a command to the remote device to output the running configuration
         session.sendline('show running-config')
+        # Manually capture the running configuration output
+        running_config = ''
+        while True:
+            index = session.expect(['#', pexpect.TIMEOUT])
+            if index == 0:
+                running_config += session.before
+                break
+            elif index == 1:
+                running_config += session.before
 
-        # Use a timeout and expect to capture the running config
-        config_output = session.expect(['#', pexpect.TIMEOUT], timeout=10)
-        
-        if config_output == 0:
-            with open('running-config.txt', 'w') as config_file:
-                config_file.write(session.before)
+        # Save the running configuration to a file
+        with open('running-config.txt', 'w') as config_file:
+            config_file.write(running_config)
 
         logging.info('Connected to %s', ip_address)
         logging.info('Username: %s', username)
@@ -55,7 +61,7 @@ def establish_telnet_connection(ip_address, username, password):
         print('Password: ********')
         print('Modified hostname to "R1" and saved running config locally.')
         print('------------------------------------------------------')
-        
+
         return session
 
     except Exception as e:
