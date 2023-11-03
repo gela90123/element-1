@@ -27,30 +27,6 @@ def establish_telnet_connection(ip_address, username, password):
         if result != 0:
             raise Exception(f'Error: Failed to enter password {password}')
 
-        # Now that we're connected, modify the device hostname
-        session.sendline('configure terminal')
-        session.expect('#')
-        session.sendline('hostname R1')  # Set the hostname to "R1"
-        session.expect('#')
-        session.sendline('end')
-        session.expect('#')
-
-        # Send a command to the remote device to output the running configuration
-        session.sendline('show running-config')
-        # Manually capture the running configuration output
-        running_config = ''
-        while True:
-            index = session.expect(['#', pexpect.TIMEOUT])
-            if index == 0:
-                running_config += session.before
-                break
-            elif index == 1:
-                running_config += session.before
-
-        # Save the running configuration to a file
-        with open('running-config.txt', 'w') as config_file:
-            config_file.write(running_config)
-
         logging.info('Connected to %s', ip_address)
         logging.info('Username: %s', username)
         logging.info('Password: %s', password)
@@ -59,9 +35,7 @@ def establish_telnet_connection(ip_address, username, password):
         print('Success: Connected to', ip_address)
         print('Username:', username)
         print('Password: ********')
-        print('Modified hostname to "R1" and saved running config locally.')
         print('------------------------------------------------------')
-
         return session
 
     except Exception as e:
@@ -79,7 +53,6 @@ def main():
     if session:
         # Terminate the Telnet session
         session.sendline('quit')
-        session.expect(pexpect.EOF)
         session.close()
 
 if __name__ == '__main__':
