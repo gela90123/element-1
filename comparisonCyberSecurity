@@ -9,11 +9,18 @@ def get_device_config(hostname, username, password):
     # Connect to the device
     ssh.connect(hostname, username=username, password=password)
 
+    # Start an interactive shell
+    shell = ssh.invoke_shell()
+
     # Send command to get running configuration
-    stdin, stdout, stderr = ssh.exec_command("show running-config")
+    shell.send("show running-config\n")
+
+    # Wait for the command to complete
+    while not shell.recv_ready():
+        pass
 
     # Get the running configuration
-    running_config = stdout.read().decode("utf-8")
+    running_config = shell.recv(65535).decode("utf-8")
 
     # Close the SSH connection
     ssh.close()
@@ -36,6 +43,9 @@ def configure_syslog(hostname, username, password, syslog_server):
     # Connect to the device
     ssh.connect(hostname, username=username, password=password)
 
+    # Start an interactive shell
+    shell = ssh.invoke_shell()
+
     # Send commands to configure syslog
     commands = [
         "conf t",
@@ -45,7 +55,10 @@ def configure_syslog(hostname, username, password, syslog_server):
     ]
 
     for command in commands:
-        ssh.exec_command(command)
+        shell.send(command + '\n')
+        # Wait for the command to complete
+        while not shell.recv_ready():
+            pass
 
     # Close the SSH connection
     ssh.close()
@@ -60,15 +73,4 @@ def main():
     with open("local_config.txt", "r") as file:
         local_config = file.read()
 
-    # Get the device's current running configuration
-    device_config = get_device_config(device_hostname, device_username, device_password)
-
-    # Compare the configurations
-    compare_configs(local_config, device_config)
-
-    # Configure syslog
-    syslog_server_ip = "192.168.1.2"
-    configure_syslog(device_hostname, device_username, device_password, syslog_server_ip)
-
-if __name__ == "__main__":
-    main()
+    #
