@@ -91,7 +91,7 @@ if __name__ == "__main__":
     username = 'prne'
     password = 'cisco123!'
     enable_password = 'class123!'
-    syslog_server_ip = 'your_syslog_server_ip'  # Replace with your syslog server IP
+    syslog_server_ip = 'IPhere'  # put right ip here when testing
     hardening_advice = """
     en
     conf t
