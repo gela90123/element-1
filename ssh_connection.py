@@ -108,22 +108,51 @@ class NetworkDeviceConfigurator:
             ip ssh version 2
             """
 
-            self.session.sendline('show running-config')
+            # Debug: Print hardening advice for debugging
+            print('------------------------------------------------------')
+            print('Hardening Advice:')
+            print(hardening_advice)
+            print('------------------------------------------------------')
+
+            self.session.sendline('enable')
             result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
 
             if result != 0:
+                logging.error(f'Failed to enter enable mode for {self.ip}')
+                # Debug: Print the session output for troubleshooting
+                print('Failed to enter enable mode. Session output:')
+                print(self.session.before)
+                print(self.session.after)
+                return False
+
+            self.session.sendline('configure terminal')
+            result = self.session.expect([r'\(config\)#', pexpect.TIMEOUT, pexpect.EOF])
+
+            if result != 0:
+                logging.error(f'Failed to enter config mode for {self.ip}')
+                # Debug: Print the session output for troubleshooting
+                print('Failed to enter config mode. Session output:')
+                print(self.session.before)
+                print(self.session.after)
+                return False
+
+            self.session.sendline('show running-config')
+            result = self.session.expect([r'\(config\)#', pexpect.TIMEOUT, pexpect.EOF])
+
+            if result != 0:
                 logging.error(f'Failed to capture the running configuration for {self.ip}')
+                # Debug: Print the session output for troubleshooting
+                print('Failed to capture running configuration. Session output:')
+                print(self.session.before)
+                print(self.session.after)
                 return False
 
             running_config = self.session.before
 
-            # Print running configuration and hardening advice for debugging
+            # Print running configuration for debugging
             print('------------------------------------------------------')
             print('Running Configuration:')
             print(running_config)
-            print('------------------------------------------------------')
-            print('Hardening Advice:')
-            print(hardening_advice)
             print('------------------------------------------------------')
 
             # Compare running configuration with hardening advice
