@@ -138,8 +138,6 @@ class NetworkDeviceConfigurator:
             self.session.sendline('configure terminal')
             self.session.sendline('logging on')  # Enable syslog
             self.session.sendline('end')
-            result = self.session.expect(['#', pexpect.TIME
-                                                      self.session.sendline('end')
             result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
 
             if result != 0:
@@ -203,4 +201,3 @@ if __name__ == "__main__":
 
     # Disconnect from the device
     device.disconnect()
-
