@@ -73,4 +73,15 @@ def main():
     with open("local_config.txt", "r") as file:
         local_config = file.read()
 
-    #
+    # Get the device's current running configuration
+    device_config = get_device_config(device_hostname, device_username, device_password)
+
+    # Compare the configurations
+    compare_configs(local_config, device_config)
+
+    # Configure syslog
+    syslog_server_ip = "192.168.1.2"
+    configure_syslog(device_hostname, device_username, device_password, syslog_server_ip)
+
+if __name__ == "__main__":
+    main()
