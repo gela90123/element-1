@@ -87,7 +87,7 @@ class NetworkDeviceConfigurator:
 # Usage
 if __name__ == "__main__":
     # Set the device and user credentials
-    ip_address = 'your_device_ip'
+    ip_address = '192.168.56.101'
     username = 'your_username'
     password = 'your_password'
     enable_password = 'your_enable_password'
