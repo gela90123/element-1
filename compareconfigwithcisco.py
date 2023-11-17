@@ -139,3 +139,68 @@ class NetworkDeviceConfigurator:
             self.session.sendline('logging on')  # Enable syslog
             self.session.sendline('end')
             result = self.session.expect(['#', pexpect.TIME
+                                                      self.session.sendline('end')
+            result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
+
+            if result != 0:
+                logging.error(f'Failed to enable syslog for {self.ip}')
+                return False
+
+            return True
+        except Exception as e:
+            logging.error(f"Failed to enable syslog: {e}")
+            return False
+
+    def disconnect(self):
+        if self.session:
+            self.session.close()
+            self.session = None
+
+if __name__ == "__main__":
+    # Initialize logging for error tracking
+    logging.basicConfig(filename='network_device_configurator.log', level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
+
+    # Set the device and user credentials
+    ip_address = '192.168.1.1'  # Update with your actual device IP
+    username = 'your_username'  # Update with your actual username
+    password = 'your_password'  # Update with your actual password
+    password_enable = 'your_enable_password'  # Update with your actual enable password
+    new_hostname = 'R1'
+
+    # Create a NetworkDeviceConfigurator instance
+    device = NetworkDeviceConfigurator(ip_address, username, password, password_enable)
+
+    if device.connect() and device.configure_hostname(new_hostname):
+        # Successful connection and hostname configuration
+        print('------------------------------------------------------')
+        print('')
+        print(f'--- Success! Connecting to {ip_address} as user {username}')
+        print(f'--- Password: {password}')
+        print(f'--- Hostname changed to: {new_hostname}')
+        print('')
+        print('------------------------------------------------------')
+
+        # Save the running configuration to a file
+        output_file = 'running_config.txt'
+        if device.save_running_config(output_file):
+            print(f'--- Running configuration saved to {output_file}')
+        else:
+            print(f'--- Failed to save running configuration.')
+
+        # Compare with Cisco device hardening advice
+        if device.compare_with_cisco_hardening():
+            print('--- Device complies with Cisco device hardening advice.')
+
+        # Enable syslog
+        if device.enable_syslog():
+            print('--- Syslog enabled on the device.')
+
+        logging.info(f"Configuration of {ip_address} successful.")
+    else:
+        # Connection or configuration failed
+        print(f"Configuration of {ip_address} failed.")
+        logging.error(f"Configuration of {ip_address} failed.")
+
+    # Disconnect from the device
+    device.disconnect()
+
