@@ -1,172 +1,139 @@
+#!/usr/bin/python3
+
+"""
+Example of a script that executes a CLI command on a remote device over\
+ established SSH connection.
+
+Administrator login options and CLI commands are device specific, thus\
+ this script needs to be adapted to a concrete device specifics.
+    Current script assumes interaction with Cisco IOS device.
+NOTES: Requires installation of the 'paramiko' Python package using:\
+ pip install paramiko
+        The 'paramiko' package is documented at: http://docs.paramiko.org
+        Complete set of SSH client operations is available at:\
+ http://docs.paramiko.org/en/1.15/api/client.html
+
+pydoc-example.py
+"""
+
+# Third-party required modules/packages/library
 import pexpect
-import logging
 
-class NetworkDeviceConfigurator:
-    def __init__(self, ip, username, password, enable_password):
-        self.ip = ip
-        self.username = username
-        self.password = password
-        self.enable_password = enable_password
-        self.session = None
 
-    def connect(self):
-        try:
-            # Establish an SSH session
-            self.session = pexpect.spawn(f'ssh {self.username}@{self.ip}', encoding='utf-8', timeout=20)
-            result = self.session.expect(['Password:', pexpect.TIMEOUT, pexpect.EOF])
+# Read device information from the file
+def get_devices_list():
+    """
+    Get a list of devices from a text file.
 
-            if result != 0:
-                logging.error(f'Failed to create an SSH session for {self.ip}')
-                return False
+    =return: List of devices
+    """
+    # Create empty list
+    devices_list = []
 
-            self.session.sendline(self.password)
-            result = self.session.expect(['>', pexpect.TIMEOUT, pexpect.EOF])
+    # Open the device file with the data
+    file = open('devices-15.txt', 'r')
 
-            if result != 0:
-                logging.error(f'Failed to enter the password for {self.ip}')
-                return False
+    # Retrieve the device IPs and append to list
+    for line in file:
+        devices_list.append(line.rstrip())
 
-            self.session.sendline('enable')
-            result = self.session.expect(['Password:', pexpect.TIMEOUT, pexpect.EOF])
+    file.close()
 
-            if result != 0:
-                logging.error(f'Failed to enter enable mode for {self.ip}')
-                return False
+    # Print list of devices
+    print('\nDevices list: ', devices_list, end='\n\n')
+    return devices_list
 
-            self.session.sendline(self.enable_password)
-            result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
 
-            if result != 0:
-                logging.error(f'Failed to enter enable mode after sending the password for {self.ip}')
-                return False
+# Connect to devices through ssh
+def connect(ip_address, username, password):
+    """
+    Connect to device using pexpect.
 
-            return True
-        except Exception as e:
-            logging.error(f"Failed to establish an SSH connection: {e}")
-            return False
+    :ip_address: The IP address of the device we are connecting to
+    :username: The username that we should use when logging in
+    :password: The password that we should use when logging in
+    =return: pexpect session object if successful, 0 otherwise
+    """
+    print('Establishing SSH session: ', ip_address, username, password)
 
-    def configure_hostname(self, new_hostname):
-        try:
-            self.session.sendline('configure terminal')
-            result = self.session.expect([r'\(config\)#', pexpect.TIMEOUT, pexpect.EOF])
+    # Connect via ssh to device
+    session = pexpect.spawn('ssh ' + username + '@' + ip_address,
+                            encoding='utf-8', timeout=20)
+    ssh_newkey = 'Are you sure you want to continue connecting'
+    result = session.expect([ssh_newkey, 'Password:', pexpect.TIMEOUT,
+                            pexpect.EOF])
 
-            if result != 0:
-                logging.error(f'Failed to enter config mode for {self.ip}')
-                return False
+    # Check for error, if so then print error and exit
+    if result == 0:
+        session.sendline('yes')
+        result = session.expect([ssh_newkey, 'Password:', pexpect.TIMEOUT,
+                                pexpect.EOF])
+    elif result != 1:
+        print('!!! SSH failed creating session for: ', ip_address)
+        exit()
 
-            self.session.sendline(f'hostname {new_hostname}')
-            result = self.session.expect([rf'{new_hostname}\(config\)#', pexpect.TIMEOUT, pexpect.EOF])
+    # Enter the username
+    session.sendline(password)
+    result = session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
 
-            if result != 0:
-                logging.error(f'Failed to set the hostname for {self.ip}')
-                return False
+    # Check for error, if so then print error and exit
+    if result != 0:
+        print('!!! Password failed: ', password)
+        exit()
 
-            self.session.sendline('exit')
-            self.session.sendline('exit')
+    print('--- Connected to: ', ip_address)
+    return session
 
-            return True
-        except Exception as e:
-            logging.error(f"Configuration failed: {e}")
-            return False
 
-    def save_running_config(self, output_file):
-        try:
-            self.session.sendline('show running-config')
-            result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
+# Get version information
+def get_version_info(session):
+    """
+    Get the IOS version from the device.
 
-            if result != 0:
-                logging.error(f'Failed to capture the running configuration for {self.ip}')
-                return False
+    :session: The pexpect session object that we are using
+    =return: Version number
+    """
+    print('--- Getting version information')
 
-            running_config = self.session.before  # Get the output before the prompt
+    # Send command to get version
+    session.sendline('show version | include Version')
+    result = session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
 
-            with open(output_file, 'w') as f:
-                f.write(running_config)
+    # Check for error, if so then print error and exit
+    if result != 0:
+        print('!!! FAILED to get version information')
+        exit()
 
-            return True
-        except Exception as e:
-            logging.error(f"Failed to save the running configuration: {e}")
-            return False
+    # Extract the 'version' part of the output
+    version_output_lines = session.before.splitlines()
+    version_output_parts = version_output_lines[1].split(',')
+    version = version_output_parts[1].strip()
 
-    def save_running_config_with_details(self, output_file):
-        try:
-            show_commands = ['show version', 'show interfaces', 'show ip route']  # Add more show commands as needed
+    print('--- Got version: ', version, end='\n\n')
+    return version
 
-            with open(output_file, 'w') as f:
-                for command in show_commands:
-                    print(f"Executing command: {command}")
-                    self.session.sendline(command)
-                    result = self.session.expect([pexpect.TIMEOUT, '#'])
 
-                    if result == 0:
-                        logging.error(f'Timeout waiting for prompt after {command} for {self.ip}')
-                        print(f"Timeout waiting for prompt after {command} for {self.ip}")
-                        return False
+# Get list of devices
+devices_list = get_devices_list()
 
-                    command_output = self.session.before  # Get the output before the prompt
-                    f.write(f"=== {command} ===\n")
-                    f.write(command_output)
-                    f.write("\n\n")
+# Create file to save output
+version_file_out = open('version-info-out.txt', 'w')
 
-                    logging.info(f'Successfully captured the output of {command} for {self.ip}')
-                    logging.info(f'Command output: {command_output}')
-                    print(f"Successfully captured the output of {command} for {self.ip}")
-                    print(f'Command output: {command_output}')
+# Loop through all the devices in the devices list
+for ip_address in devices_list:
 
-            return True
-        except Exception as e:
-            logging.error(f"Failed to save the running configuration with details: {e}")
-            print(f"Failed to save the running configuration with details: {e}")
-            return False
+    # Connect to the device via CLI and get version information
+    session = connect(ip_address, 'cisco', 'cisco123!')
+    device_version = get_version_info(session)
 
-    def disconnect(self):
-        if self.session:
-            self.session.close()
-            self.session = None
+    # Close the session
+    session.close()
 
-if __name__ == "__main__":
-    # Initialize logging for error tracking
-    logging.basicConfig(filename='network_device_configurator.log', level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
+    # Write device data to output file
+    version_file_out.write('IP: '+ip_address+'  Version: '+device_version+'\n')
 
-    # Set the device and user credentials
-    ip_address = '192.168.56.101'
-    username = 'prne'
-    password = 'cisco123!'
-    password_enable = 'class123!'
-    new_hostname = 'R1'
+# Done with all devices and writing the file, so close
+version_file_out.close()
 
-    # Create a NetworkDeviceConfigurator instance
-    device = NetworkDeviceConfigurator(ip_address, username, password, password_enable)
-
-    if device.connect() and device.configure_hostname(new_hostname):
-        # Successful connection and hostname configuration
-        print('------------------------------------------------------')
-        print('')
-        print(f'--- Success! Connecting to {ip_address} as user {username}')
-        print(f'--- Password: {password}')
-        print(f'--- Hostname changed to: {new_hostname}')
-        print('')
-        print('------------------------------------------------------')
-
-        # Save the running configuration to a file
-        output_file = 'running_config.txt'
-        if device.save_running_config(output_file):
-            print(f'--- Running configuration saved to {output_file}')
-        else:
-            print(f'--- Failed to save running configuration.')
-
-        # Save the running configuration with additional details to a file
-        output_file_with_details = 'running_config_with_details.txt'
-        if device.save_running_config_with_details(output_file_with_details):
-            print(f'--- Running configuration with details saved to {output_file_with_details}')
-        else:
-            print(f'--- Failed to save running configuration with details.')
-
-        logging.info(f"Configuration of {ip_address} successful.")
-    else:
-        # Connection or configuration failed
-        print(f"Configuration of {ip_address} failed.")
-        logging.error(f"Configuration of {ip_address} failed.")
-
-    # Disconnect from the device
-    device.disconnect()
+print('The file version-info-out.txt has been created with device version\
+ data\n')
