@@ -99,11 +99,22 @@ class NetworkDeviceConfigurator:
 
             running_config = self.session.before  # Get the output before the prompt
 
-            # Cisco device hardening advice from Moodle
+            # Cisco device hardening advice from provided text
             cisco_hardening_advice = """
+            en
+            conf t
+            int g0/0
+            ip address 192.168.1.1 255.255.255.0
+            no shut
+            exit
+            line vty 0 4
+            transport input all
+            login local
             username cisco password cisco
             ip domain-name domain.com
-            crypto key generate rsa general-keys modulus 2048
+            hostname R1
+            enable secret class
+            crypto key generate rsa modulus 2048
             ip ssh version 2
             """
 
@@ -127,64 +138,4 @@ class NetworkDeviceConfigurator:
             self.session.sendline('configure terminal')
             self.session.sendline('logging on')  # Enable syslog
             self.session.sendline('end')
-            result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
-
-            if result != 0:
-                logging.error(f'Failed to enable syslog for {self.ip}')
-                return False
-
-            return True
-        except Exception as e:
-            logging.error(f"Failed to enable syslog: {e}")
-            return False
-
-    def disconnect(self):
-        if self.session:
-            self.session.close()
-            self.session = None
-
-if __name__ == "__main__":
-    # Initialize logging for error tracking
-    logging.basicConfig(filename='network_device_configurator.log', level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
-
-    # Set the device and user credentials
-    ip_address = '192.168.56.101'
-    username = 'prne'
-    password = 'cisco123!'
-    password_enable = 'class123!'
-    new_hostname = 'R1'
-
-    # Create a NetworkDeviceConfigurator instance
-    device = NetworkDeviceConfigurator(ip_address, username, password, password_enable)
-
-    if device.connect() and device.configure_hostname(new_hostname):
-        # Successful connection and hostname configuration
-        print('------------------------------------------------------')
-        print('')
-        print(f'--- Success! Connecting to {ip_address} as user {username}')
-        print(f'--- Password: {password}')
-        print(f'--- Hostname changed to: {new_hostname}')
-        print('')
-        print('------------------------------------------------------')
-
-        # Save the running configuration to a file
-        output_file = 'running_config.txt'
-        if device.save_running_config(output_file):
-            print(f'--- Running configuration saved to {output_file}')
-        else:
-            print(f'--- Failed to save running configuration.')
-
-        # Compare with Cisco device hardening and enable syslog
-        if device.compare_with_cisco_hardening() and device.enable_syslog():
-            print('--- Syslog enabled for event logging and monitoring.')
-        else:
-            print('--- Failed to compare with Cisco device hardening or enable syslog.')
-
-        logging.info(f"Configuration of {ip_address} successful.")
-    else:
-        # Connection or configuration failed
-        print(f"Configuration of {ip_address} failed.")
-        logging.error(f"Configuration of {ip_address} failed.")
-
-    # Disconnect from the device
-    device.disconnect()
+            result = self.session.expect(['#', pexpect.TIME
