@@ -88,13 +88,26 @@ class NetworkDeviceConfigurator:
 if __name__ == "__main__":
     # Set the device and user credentials
     ip_address = '192.168.56.101'
-    username = 'your_username'
-    password = 'your_password'
-    enable_password = 'your_enable_password'
+    username = 'prne'
+    password = 'cisco123!'
+    enable_password = 'class123!'
     syslog_server_ip = 'your_syslog_server_ip'  # Replace with your syslog server IP
     hardening_advice = """
-    Your Cisco device hardening advice goes here.
-    Replace this multiline string with the actual advice.
+    en
+    conf t
+    int g0/0
+    ip address 192.168.1.1 255.255.255.0
+    no shut
+    exit
+    line vty 0 4
+    transport input all
+    login local
+    username cisco password cisco
+    ip domain-name domain.com
+    hostname R1
+    enable secret class
+    crypto key generate rsa
+    ip ssh version 2
     """
 
     # Initialize logging for error tracking
