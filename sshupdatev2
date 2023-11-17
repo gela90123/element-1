@@ -107,6 +107,7 @@ class NetworkDeviceConfigurator:
                     f.write("\n\n")
 
                     logging.info(f'Successfully captured the output of {command} for {self.ip}')
+                    logging.info(f'Command output: {command_output}')
 
             return True
         except Exception as e:
@@ -138,3 +139,17 @@ if __name__ == "__main__":
         print('')
         print(f'--- Success! Connecting to {ip_address} as user {username}')
         print(f'--- Password: {password}')
+        print(f'--- Hostname changed to: {new_hostname}')
+        print('')
+        print('------------------------------------------------------')
+
+        # Save the running configuration to a file
+        output_file = 'running_config.txt'
+        if device.save_running_config(output_file):
+            print(f'--- Running configuration saved to {output_file}')
+        else:
+            print(f'--- Failed to save running configuration.')
+
+        # Save the running configuration with additional details to a file
+        output_file_with_details = 'running_config_with_details.txt'
+        if device.save_running_config
