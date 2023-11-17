@@ -88,10 +88,25 @@ class NetworkDeviceConfigurator:
             logging.error(f"Failed to save the running configuration: {e}")
             return False
 
-    def compare_with_hardening_advice(self, hardening_advice_file):
+    def compare_with_hardening_advice(self):
         try:
-            with open(hardening_advice_file, 'r') as f:
-                hardening_advice = f.read()
+            hardening_advice = """
+            en
+            conf t
+            int g0/0
+            ip address 192.168.1.1 255.255.255.0
+            no shut
+            exit
+            line vty 0 4
+            transport input all
+            login local
+            username cisco password cisco
+            ip domain-name domain.com
+            hostname R1
+            enable secret class
+            crypto key generate rsa
+            ip ssh version 2
+            """
 
             self.session.sendline('show running-config')
             result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
@@ -101,6 +116,15 @@ class NetworkDeviceConfigurator:
                 return False
 
             running_config = self.session.before
+
+            # Print running configuration and hardening advice for debugging
+            print('------------------------------------------------------')
+            print('Running Configuration:')
+            print(running_config)
+            print('------------------------------------------------------')
+            print('Hardening Advice:')
+            print(hardening_advice)
+            print('------------------------------------------------------')
 
             # Compare running configuration with hardening advice
             d = difflib.Differ()
@@ -178,30 +202,10 @@ if __name__ == "__main__":
         else:
             print(f'--- Failed to save running configuration.')
 
-        # i. Compare running configuration with hardening advice
-        hardening_advice = """
-        en
-        conf t
-        int g0/0
-        ip address 192.168.1.1 255.255.255.0
-        no shut
-        exit
-        line vty 0 4
-        transport input all
-        login local
-        username cisco password cisco
-        ip domain-name domain.com
-        hostname R1
-        enable secret class
-        crypto key generate rsa
-        ip ssh version 2
-        """
-        with open('cisco_device_hardening.txt', 'w') as f:
-            f.write(hardening_advice)
+        # Compare running configuration with hardening advice
+        device.compare_with_hardening_advice()
 
-        device.compare_with_hardening_advice('cisco_device_hardening.txt')
-
-        # ii. Configure syslog
+        # Configure syslog
         if device.configure_syslog(syslog_server_ip):
             print('--- Syslog configuration successful.')
         else:
