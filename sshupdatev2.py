@@ -96,11 +96,11 @@ class NetworkDeviceConfigurator:
                 for command in show_commands:
                     print(f"Executing command: {command}")
                     self.session.sendline(command)
-                    result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF])
+                    result = self.session.expect([pexpect.TIMEOUT, '#'])
 
-                    if result != 0:
-                        logging.error(f'Failed to capture the output of {command} for {self.ip}')
-                        print(f"Failed to capture the output of {command} for {self.ip}")
+                    if result == 0:
+                        logging.error(f'Timeout waiting for prompt after {command} for {self.ip}')
+                        print(f"Timeout waiting for prompt after {command} for {self.ip}")
                         return False
 
                     command_output = self.session.before  # Get the output before the prompt
