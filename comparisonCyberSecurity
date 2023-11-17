@@ -1,0 +1,74 @@
+import paramiko
+from difflib import unified_diff
+
+def get_device_config(hostname, username, password):
+    # Set up SSH client
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    # Connect to the device
+    ssh.connect(hostname, username=username, password=password)
+
+    # Send command to get running configuration
+    stdin, stdout, stderr = ssh.exec_command("show running-config")
+
+    # Get the running configuration
+    running_config = stdout.read().decode("utf-8")
+
+    # Close the SSH connection
+    ssh.close()
+
+    return running_config
+
+def compare_configs(local_config, device_config):
+    # Compare the configurations using unified_diff
+    diff = unified_diff(local_config.splitlines(), device_config.splitlines())
+
+    # Display the differences
+    for line in diff:
+        print(line)
+
+def configure_syslog(hostname, username, password, syslog_server):
+    # Set up SSH client
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    # Connect to the device
+    ssh.connect(hostname, username=username, password=password)
+
+    # Send commands to configure syslog
+    commands = [
+        "conf t",
+        "logging host {} udp/514".format(syslog_server),
+        "end",
+        "write memory"
+    ]
+
+    for command in commands:
+        ssh.exec_command(command)
+
+    # Close the SSH connection
+    ssh.close()
+
+def main():
+    # Device information
+    device_hostname = "192.168.1.1"
+    device_username = "your_username"
+    device_password = "your_password"
+
+    # Get the local configuration from Delivery 1
+    with open("local_config.txt", "r") as file:
+        local_config = file.read()
+
+    # Get the device's current running configuration
+    device_config = get_device_config(device_hostname, device_username, device_password)
+
+    # Compare the configurations
+    compare_configs(local_config, device_config)
+
+    # Configure syslog
+    syslog_server_ip = "192.168.1.2"
+    configure_syslog(device_hostname, device_username, device_password, syslog_server_ip)
+
+if __name__ == "__main__":
+    main()
