@@ -92,6 +92,7 @@ class NetworkDeviceConfigurator:
 
     def compare_startup_config(self):
         try:
+            # Increase the timeout for the expect call
             self.session.sendline('show startup-config')
             result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF], timeout=30)
 
@@ -104,6 +105,10 @@ class NetworkDeviceConfigurator:
             # Print the raw output for debugging
             print(f'--- Raw Startup Configuration Output for {self.ip}:')
             print(startup_config)
+
+            # Print the prompt for debugging
+            print(f'--- Prompt for {self.ip}:')
+            print(self.session.after)
 
             # You can now compare the running and startup configurations
             diff = difflib.unified_diff(self.session.before.splitlines(), startup_config.splitlines())
