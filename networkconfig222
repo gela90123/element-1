@@ -19,3 +19,5 @@
 -
 +R1
 --- Local configuration comparison successful (running_config.txt)
+in logs:2023-11-24 12:45:49,554 - ERROR: Failed to capture the startup configuration for 192.168.56.101
+2023-11-24 12:45:49,555 - INFO: Configuration of 192.168.56.101 successful.
