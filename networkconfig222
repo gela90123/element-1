@@ -93,8 +93,13 @@ class NetworkDeviceConfigurator:
     def compare_startup_config(self):
         try:
             # Increase the timeout for the expect call
-            self.session.sendline('more system:running-config')
-            result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF], timeout=60)
+            self.session.sendline('show startup')
+            result = self.session.expect(['Password:', '#', pexpect.TIMEOUT, pexpect.EOF], timeout=60)
+
+            if result == 0:
+                # Send the enable password if prompted
+                self.session.sendline(self.enable_password)
+                result = self.session.expect(['#', pexpect.TIMEOUT, pexpect.EOF], timeout=10)
 
             if result != 0:
                 logging.error(f'Failed to capture the startup configuration for {self.ip}')
