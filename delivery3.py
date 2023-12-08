@@ -48,8 +48,8 @@ def configure_ipsec(connection, your_pre_shared_key, r2_ip):
 device_info = {
     'device_type': 'cisco_ios',
     'ip': '192.168.56.101',  # Replace with the actual IP address of CSR1000v
-    'username': 'devasc',
-    'password': 'Cisco123!',
+    'username': 'cisco',
+    'password': 'cisco123!',
 }
 
 # Connect to the device
