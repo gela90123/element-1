@@ -23,17 +23,17 @@ def configure_acl(connection):
     except Exception as e:
         print(f"Error configuring ACL: {e}")
 
-def configure_ipsec(connection):
+def configure_ipsec(connection, your_pre_shared_key, r2_ip):
     ipsec_config_commands = [
         'crypto isakmp policy 10',
         'encryption aes',
         'authentication pre-share',
         'group 2',
         'exit',
-        'crypto isakmp key YOUR_PRESHARED_KEY address R2_IP',
+        f'crypto isakmp key {your_pre_shared_key} address {r2_ip}',
         'crypto ipsec transform-set MY_TRANSFORM esp-aes esp-sha-hmac',
         'crypto map MY_MAP 10 ipsec-isakmp',
-        'set peer R2_IP',
+        f'set peer {r2_ip}',
         'set transform-set MY_TRANSFORM',
         'match address MY_ACL',
     ]
@@ -47,17 +47,10 @@ def configure_ipsec(connection):
 # Define device information
 device_info = {
     'device_type': 'cisco_ios',
-    'ip': 'CSR1000v_IP',
-    'username': 'your_username',
-    'password': 'your_password',
+    'ip': '192.168.56.101',  # Replace with the actual IP address of CSR1000v
+    'username': 'devasc',
+    'password': 'Cisco123!',
 }
-
-# Replace placeholder values
-device_info['ip'] = input("Enter the device IP: ")
-device_info['username'] = input("Enter your username: ")
-device_info['password'] = input("Enter your password: ")
-YOUR_PRESHARED_KEY = input("Enter your pre-shared key: ")
-R2_IP = input("Enter R2's IP: ")
 
 # Connect to the device
 device_connection = connect_to_device(device_info)
@@ -66,8 +59,14 @@ if device_connection:
     # Configure ACL
     configure_acl(device_connection)
 
+    # Input your own pre-shared key
+    YOUR_PRESHARED_KEY = input("Enter your pre-shared key: ")
+
+    # Input R2's IP
+    R2_IP = '172.16.1.2'  # Replace with the actual IP address of R2
+
     # Configure IPSec
-    configure_ipsec(device_connection)
+    configure_ipsec(device_connection, YOUR_PRESHARED_KEY, R2_IP)
 
     # Disconnect from the device
     device_connection.disconnect()
